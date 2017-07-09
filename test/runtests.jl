@@ -4,6 +4,7 @@ include("json2.jl")
 
 Endpoints.@GET "test" ()->"testing GET resource"
 Endpoints.@GET "test/{var::String}" var->"testing $var resource"
+Endpoints.@GET "test/harry/potter" var->"testing issue#4 conflicting case"
 Endpoints.@GET "test/int/{var::Int}" var->"testing int $var resource"
 Endpoints.@GET "test/type/{::Type{T}}" T->parse(T, "1")
 
