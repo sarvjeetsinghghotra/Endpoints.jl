@@ -36,6 +36,15 @@ end
  # duplicate keyword arguments can, however, be passed in a `kwargs...` varargs catch-all, providing a work-around
  # query parameters are always passed as String values, leaving the julia function itself to perform any conversions
 
+ macro Default(func)
+     function __default__() end
+     return quote
+         function $(esc(Symbol(__default__)))()
+             $(esc(func))()
+         end
+     end
+ end
+
 macro GET(resource, func)
     generate_dispatch("GET", resource, nothing, func)
 end
@@ -191,11 +200,10 @@ function match_conds(route, req_comps)
     routing_conds = ["scheme", "domain"]
     for (i, cond) in enumerate(routing_conds)
         if haskey(route, cond) && route[cond] != req_comps[i]
-            println("match_conds - false")
             return false
         end
     end
-    println("match_conds - true")
+
     return true
 end
 
@@ -210,7 +218,7 @@ function handler(req, resp)
         vals_and_args = []
         matched = true
         if length(route["path"]) == length(req_path) && match_conds(route, req_comps)
-            println("route[path]: ", route["path"])
+
             for (i, seg) in enumerate(route["path"])
                 if typeof(seg) == Val route["seg_types"][i] == "hard-coded"
                     # hard-coded path value
@@ -226,7 +234,7 @@ function handler(req, resp)
                     push!(vals_and_args, req_path[i])
                 end
             end
-            println("vals_and_args: ", vals_and_args)
+
             if matched && METHOD_VALS[HTTP.method(req)] != route["method"]
                 matched = false
             end
@@ -251,7 +259,6 @@ function handler(req, resp)
             break
         end
     end
-    println("vals_and_args: ", vals_and_args)
 
     method_val = METHOD_VALS[HTTP.method(req)]
     query_params = parsequerystring(HTTP.query(HTTP.uri(req)))
@@ -261,7 +268,11 @@ function handler(req, resp)
         ret = Endpoints.__uri_dispatch__(method_val, vals_and_args...; query_params...)
     catch e
         if isa(e, MethodError)
-            return handler404(req, resp)
+            if method_exists(__default__, ())
+                ret = __default__()
+            else
+                return handler404(req, resp)
+            end
         end
         println(e)
         rethrow(e)

@@ -2,6 +2,7 @@ using Endpoints, Base.Test, HTTP
 
 include("json2.jl")
 
+Endpoints.@Default ()->"nothing matched, returning default"
 Endpoints.@GET "test" ()->"testing GET resource"
 Endpoints.@GET "test/{var::String}" var->"testing $var resource"
 Endpoints.@GET "test/harry/potter" var->"testing issue#4 conflicting case"
@@ -17,4 +18,4 @@ Endpoints.@POST "test/post" body body->"do you like my $body"
 Endpoints.@POST "test/post/andarg/{arg}" body (arg, body)->"do you like my $arg and $body"
 Endpoints.@POST "test/post/typedbod" body::Bod bod->"nice bod: $(bod.id), $(bod.nm)"
 
-HTTP.serve(handler = Endpoints.handler)
+HTTP.serve(handler = Endpoints.handler, port=8080)
